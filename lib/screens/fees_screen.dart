@@ -7,78 +7,83 @@ class FeesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return QSurface(
+      title: 'Fees',
+      subtitle: 'Simple, transparent — and designed to go down as you build good habits.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Fees', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
-
-          // Infographic: fee trajectory (visual, not numbers-heavy)
+          // Step bar (7% -> 4% -> 0%) as a simple infographic
           QCard(
-            padding: const EdgeInsets.all(18),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('How your fee goes down', style: TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 10),
-              LayoutBuilder(builder: (context, c) {
-                return Container(
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: QPalette.primary.withOpacity(.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(children: [
-                    // base fee segment
-                    Expanded(
-                      flex: 40,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: QPalette.primary,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    // savings / boost impact segment
-                    Expanded(
-                      flex: 60,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [QPalette.primary.withOpacity(.6), Colors.transparent],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ]),
-                );
-              }),
-              const SizedBox(height: 8),
-              const Text('Pay on time and enable Round-Ups / Escrow Boost to reduce your fee automatically.',
-                  style: TextStyle(color: QPalette.slateMuted)),
-            ]),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionHeader('How fees reduce over time'),
+                const SizedBox(height: 8),
+                Text(
+                  'Start here and trend down with Escrow Boost + Round-Ups + on-time payments.',
+                  style: QTheme.bodyMuted,
+                ),
+                const SizedBox(height: 18),
+                _StepRow(label: 'Initial', percent: .33, color: QPalette.warning),
+                const SizedBox(height: 10),
+                _StepRow(label: 'Improving', percent: .66, color: QPalette.info),
+                const SizedBox(height: 10),
+                _StepRow(label: 'Best rate', percent: 1.0, color: QPalette.success),
+              ],
+            ),
           ),
+          const SizedBox(height: 20),
 
-          const SizedBox(height: 16),
-
-          // Two clear paths, no dollar figures
-          Row(
+          // Two info cards: Escrow Boost vs Instant Boost
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
             children: const [
-              Expanded(child: _InfoCard(
-                icon: Icons.savings_rounded,
-                title: 'Round-Ups • Escrow Boost',
-                subtitle: 'Your spare change moves to an escrow—no card to spend from.',
-                details: 'Every purchase moves rounded spare change into savings, lowering your fee over time.',
-              )),
-              SizedBox(width: 16),
-              Expanded(child: _InfoCard(
-                icon: Icons.flash_on_rounded,
+              _InfoCard(
+                icon: Icons.savings_outlined,
+                title: 'Escrow Boost',
+                text:
+                    'Lock small amounts you already plan to use. This improves risk profile and reduces fees as you go.',
+              ),
+              _InfoCard(
+                icon: Icons.bolt_outlined,
                 title: 'Instant Boost',
-                subtitle: 'Deposit a buffer up front.',
-                details: 'Add a one-time buffer and get to the lowest fee tier immediately.',
-              )),
+                text:
+                    'Need to lower your quarterly outlay now? Inject a one-time amount to immediately drop your effective rate.',
+              ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepRow extends StatelessWidget {
+  final String label;
+  final double percent;
+  final Color color;
+  const _StepRow({required this.label, required this.percent, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return QCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          SizedBox(width: 100, child: Text(label, style: QTheme.body)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: percent,
+                minHeight: 12,
+                color: color,
+                backgroundColor: QPalette.border,
+              ),
+            ),
           ),
         ],
       ),
@@ -89,29 +94,36 @@ class FeesScreen extends StatelessWidget {
 class _InfoCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
-  final String details;
-  const _InfoCard({required this.icon, required this.title, required this.subtitle, required this.details});
+  final String text;
+  const _InfoCard({required this.icon, required this.title, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    return QCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(radius: 24, backgroundColor: QPalette.primary.withOpacity(.12),
-              child: Icon(icon, color: QPalette.primary)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-              const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(color: QPalette.slate)),
-              const SizedBox(height: 6),
-              Text(details, style: const TextStyle(color: QPalette.slateMuted)),
-            ]),
-          ),
-        ],
+    return SizedBox(
+      width: 560,
+      child: QCard(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: QTheme.brandTint(context),
+              child: Icon(icon, color: QPalette.primary),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: QTheme.h6),
+                  const SizedBox(height: 6),
+                  Text(text, style: QTheme.body),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -6,43 +6,52 @@ class BillsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bills = [
-      ('AT&T', 85.0, 'Utilities', Icons.network_cell_rounded, const Color(0xFFE7F7FF)),
-      ('Electric', 146.0, 'Utilities', Icons.bolt_rounded, const Color(0xFFEFFFF2)),
-      ('Water', 64.0, 'Utilities', Icons.water_drop_rounded, const Color(0xFFEFF6FF)),
-      ('Netflix', 15.0, 'Subscription', Icons.tv_rounded, const Color(0xFFFFF1F2)),
-      ('Insurance', 120.0, 'Insurance', Icons.shield_rounded, const Color(0xFFFEF9C3)),
+    final items = [
+      {'name': 'AT&T', 'id': 'att', 'accent': QPalette.primary},
+      {'name': 'Electric', 'id': 'electric', 'accent': Colors.orange},
+      {'name': 'Water', 'id': 'water', 'accent': Colors.teal},
+      {'name': 'Netflix', 'id': 'nflix', 'accent': Colors.pink},
+      {'name': 'Insurance', 'id': 'ins', 'accent': Colors.indigo},
     ];
 
     return QSurface(
-      child: GridView.builder(
+      title: 'Bills',
+      child: ListView.separated(
         shrinkWrap: true,
-        itemCount: bills.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: MediaQuery.sizeOf(context).width > 1100 ? 3 : 1,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.9,
-        ),
-        itemBuilder: (_, i) {
-          final (name, amount, category, icon, bg) = bills[i];
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (ctx, i) {
+          final b = items[i];
+          final Color accent = b['accent'] as Color;
           return QCard(
-            color: (bg as Color),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 26,
-                  backgroundColor: Colors.white,
-                  child: Icon(icon as IconData, color: QPalette.primary),
+                  radius: 22,
+                  backgroundColor: accent.withOpacity(.12),
+                  child: Icon(Icons.receipt_long_outlined, color: accent),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(name as String, style: const TextStyle(fontWeight: FontWeight.w800)),
-                    Text(category as String, style: const TextStyle(color: QPalette.slateMuted)),
-                  ]),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(b['name'] as String, style: QTheme.h6),
+                      const SizedBox(height: 6),
+                      Text('Avg \$120 • Due around the 12th • Autopay on', style: QTheme.bodyMuted),
+                    ],
+                  ),
                 ),
-                Text('\$${(amount as num).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pushNamed(
+                      '/bill-detail',
+                      arguments: {'id': b['id'], 'name': b['name'], 'dueDay': '12'},
+                    );
+                  },
+                  child: const Text('Manage'),
+                )
               ],
             ),
           );

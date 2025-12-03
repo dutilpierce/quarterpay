@@ -8,6 +8,8 @@ import 'widgets/ai_chat_widget.dart';
 
 // Screens
 import 'screens/home_screen.dart';
+import 'screens/how_it_works_screen.dart';
+import 'screens/for_banks_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/bill_connect_screen.dart';
 import 'screens/payment_setup_screen.dart';
@@ -21,14 +23,13 @@ import 'screens/ai_helper_screen.dart';
 import 'screens/roundup_escrow_screen.dart';
 import 'screens/faq_screen.dart';
 import 'screens/privacy_policy_screen.dart';
-import 'screens/terms_of_service_screen.dart'; // <- make sure this file exists
-import 'screens/how_it_works_screen.dart';
+import 'screens/terms_of_service_screen.dart';
 import 'screens/about_us_screen.dart';
 import 'screens/contact_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env'); // reads OPENAI_API_KEY
+  await dotenv.load(fileName: '.env');
   runApp(const QuarterPayApp());
 }
 
@@ -40,7 +41,7 @@ class QuarterPayApp extends StatelessWidget {
     return MaterialApp(
       title: 'QuarterPay',
       debugShowCheckedModeBanner: false,
-      theme: QTheme.data, // <- use .data (not .theme)
+      theme: QTheme.data,
       initialRoute: '/',
       routes: {
         '/': (context) => const ScreenShell(index: 0, child: HomeScreen()),
@@ -61,6 +62,7 @@ class QuarterPayApp extends StatelessWidget {
         '/how-it-works': (context) => const ScreenShell(index: 15, child: HowItWorksScreen()),
         '/about': (context) => const ScreenShell(index: 16, child: AboutUsScreen()),
         '/contact': (context) => const ScreenShell(index: 17, child: ContactScreen()),
+        '/for-banks':   (_) => const ForBanksScreen(),
       },
     );
   }
@@ -79,7 +81,7 @@ class ScreenShell extends StatefulWidget {
 class _ScreenShellState extends State<ScreenShell> {
   bool _chatOpen = false;
 
-  void _go(int i) {
+  void _goIndex(int i) {
     const routes = [
       '/', '/signup', '/connect-bills', '/payment-setup', '/history', '/progress',
       '/bills', '/fees', '/due-dates', '/overview', '/ai-helper', '/escrow',
@@ -94,8 +96,7 @@ class _ScreenShellState extends State<ScreenShell> {
   Widget build(BuildContext context) {
     final body = Row(
       children: [
-        // ← The corrected sidebar reference
-        AppSidebar(selectedIndex: widget.index, onTap: _go),
+        AppSidebar(selectedIndex: widget.index, onTap: _goIndex), // <-- fixed type
         const VerticalDivider(width: 1),
         Expanded(
           child: Padding(
