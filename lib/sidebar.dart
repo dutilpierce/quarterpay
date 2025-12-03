@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'theme.dart';
 
+/// Sidebar menu that maps each visible row to its original route index.
+/// We intentionally OMIT the Escrow item (index 11) from the UI to "remove the button"
+/// without changing any indices or routes in the rest of the app.
+/// When a user taps, we pass the ORIGINAL route index back to [onTap].
 class AppSidebar extends StatelessWidget {
   final int selectedIndex;
-  final void Function(int index) onTap;
+  final void Function(int) onTap;
 
   const AppSidebar({
     super.key,
@@ -13,79 +17,115 @@ class AppSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<_NavItem> items = [
-      _NavItem(icon: Icons.home_outlined,        label: 'Home',          index: 0),
-      _NavItem(icon: Icons.person_add_outlined,  label: 'Signup',        index: 1),
-      _NavItem(icon: Icons.link_outlined,        label: 'Connect Bills', index: 2),
-      _NavItem(icon: Icons.account_balance_outlined, label: 'Payment Setup', index: 3),
-      _NavItem(icon: Icons.receipt_long_outlined,label: 'History',       index: 4),
-      _NavItem(icon: Icons.trending_up_outlined, label: 'Progress',      index: 5),
-      _NavItem(icon: Icons.view_list_outlined,   label: 'Bills',         index: 6),
-      _NavItem(icon: Icons.percent_outlined,     label: 'Fees',          index: 7),
-      _NavItem(icon: Icons.event_note_outlined,  label: 'Due Dates',     index: 8),
-      _NavItem(icon: Icons.dashboard_customize_outlined, label: 'Overview', index: 9),
-      _NavItem(icon: Icons.smart_toy_outlined,   label: 'AI Helper',     index: 10),
-      _NavItem(icon: Icons.savings_outlined,     label: 'Escrow Boost',  index: 11),
-      _NavItem(icon: Icons.help_outline,         label: 'FAQ',           index: 12),
-      _NavItem(icon: Icons.privacy_tip_outlined, label: 'Privacy',       index: 13),
-      _NavItem(icon: Icons.gavel_outlined,       label: 'Terms',         index: 14),
-      _NavItem(icon: Icons.map_outlined,         label: 'How It Works',  index: 15),
-      _NavItem(icon: Icons.info_outline,         label: 'About',         index: 16),
-      _NavItem(icon: Icons.contact_support_outlined, label: 'Contact',   index: 17),
+    // Define visible menu items. Each tuple = (icon, label, originalRouteIndex)
+    // Original route indices (from your MaterialApp routes):
+    // 0: '/', 1: '/signup', 2: '/connect-bills', 3: '/payment-setup',
+    // 4: '/history', 5: '/progress', 6: '/bills', 7: '/fees',
+    // 8: '/due-dates', 9: '/overview', 10: '/ai-helper',
+    // 11: '/escrow' (INTENTIONALLY HIDDEN), 12: '/faq', 13: '/privacy',
+    // 14: '/terms', 15: '/how-it-works', 16: '/about', 17: '/contact'
+    final itemsPrimary = <_Entry>[
+      _Entry(Icons.home_outlined,            'Home',              0),
+      _Entry(Icons.person_add_alt_1_outlined,'Sign Up',           1),
+      _Entry(Icons.link_outlined,            'Connect Bills',     2),
+      _Entry(Icons.account_balance_outlined, 'Payment Setup',     3),
+      _Entry(Icons.history_outlined,         'History',           4),
+      _Entry(Icons.timeline_outlined,        'Progress',          5),
+      _Entry(Icons.receipt_long_outlined,    'Bills',             6),
+      _Entry(Icons.percent_outlined,         'Fees',              7),
+      _Entry(Icons.calendar_month_outlined,  'Due Dates',         8),
+      _Entry(Icons.dashboard_customize_outlined,'Overview',       9),
+      _Entry(Icons.smart_toy_outlined,       'AI Helper',         10),
+      // (Escrow index 11 is intentionally not listed)
     ];
 
-    final List<_Extra> extra = [
-      _Extra(icon: Icons.apartment_outlined, label: 'For Banks & Ops', routeName: '/for-banks'),
+    final itemsSecondary = <_Entry>[
+      _Entry(Icons.live_help_outlined,       'FAQ',               12),
+      _Entry(Icons.privacy_tip_outlined,     'Privacy',           13),
+      _Entry(Icons.gavel_outlined,           'Terms',             14),
+      _Entry(Icons.route_outlined,           'How It Works',      15),
+      _Entry(Icons.info_outline,             'About',             16),
+      _Entry(Icons.mail_outline,             'Contact',           17),
     ];
 
     return Container(
-      width: 240,
+      width: 260,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-          colors: [Colors.white.withOpacity(.72), Colors.white.withOpacity(.58)],
+        color: Colors.white.withOpacity(.72),
+        border: Border(
+          right: BorderSide(color: QPalette.border, width: 1),
         ),
-        border: const Border(right: BorderSide(color: QPalette.border)),
         boxShadow: const [
-          BoxShadow(blurRadius: 24, spreadRadius: -8, offset: Offset(0, 10), color: Color(0x1A000000)),
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       child: SafeArea(
-        bottom: false,
         child: Column(
           children: [
-            const SizedBox(height: 12),
-            const _Brand(),
-            const SizedBox(height: 8),
+            // Brand header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: QTheme.brandTint(context),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.schedule_outlined, color: QPalette.primary),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('QuarterPay',
+                          style: QTheme.body.copyWith(fontWeight: FontWeight.w700)),
+                        Text('One quarterly payment.',
+                          style: QTheme.caption, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const Divider(height: 1),
 
+            // Primary list
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
                 children: [
-                  ...items.map((it) => _NavTile(
-                        icon: it.icon,
-                        label: it.label,
-                        active: it.index == selectedIndex,
-                        onTap: () => onTap(it.index!),
+                  ...itemsPrimary.map((e) => _MenuTile(
+                        entry: e,
+                        selected: selectedIndex == e.routeIndex,
+                        onTap: () => onTap(e.routeIndex),
                       )),
                   const SizedBox(height: 6),
-                  const Divider(height: 1),
-                  const SizedBox(height: 6),
-                  ...extra.map((e) => _NavTile(
-                        icon: e.icon,
-                        label: e.label,
-                        active: false,
-                        onTap: () => Navigator.of(context).pushNamed(e.routeName),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6),
+                    child: Text('Info', style: QTheme.caption),
+                  ),
+                  ...itemsSecondary.map((e) => _MenuTile(
+                        entry: e,
+                        selected: selectedIndex == e.routeIndex,
+                        onTap: () => onTap(e.routeIndex),
                       )),
                 ],
               ),
             ),
 
+            // Footer
+            const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
-              child: Opacity(
-                opacity: .7,
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: Text('© ${DateTime.now().year} QuarterPay', style: QTheme.caption),
               ),
             ),
@@ -96,108 +136,51 @@ class AppSidebar extends StatelessWidget {
   }
 }
 
-class _Brand extends StatelessWidget {
-  const _Brand();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Container(
-            height: 42, width: 42,
-            decoration: BoxDecoration(
-              color: Colors.white, shape: BoxShape.circle,
-              border: Border.all(color: QPalette.border),
-              boxShadow: const [
-                BoxShadow(color: Color(0x14000000), blurRadius: 18, offset: Offset(0, 8)),
-                BoxShadow(color: Color(0x0F000000), blurRadius: 4, offset: Offset(0, 1)),
-              ],
-            ),
-            child: const Center(child: Icon(Icons.spa_outlined, color: QPalette.primary, size: 22)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('QuarterPay', style: QTheme.body.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text('One quarterly payment.', style: QTheme.caption, overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavTile extends StatelessWidget {
+class _Entry {
   final IconData icon;
   final String label;
-  final bool active;
+  final int routeIndex; // ORIGINAL route index used by ScreenShell._go
+  const _Entry(this.icon, this.label, this.routeIndex);
+}
+
+class _MenuTile extends StatelessWidget {
+  final _Entry entry;
+  final bool selected;
   final VoidCallback onTap;
 
-  const _NavTile({
-    required this.icon,
-    required this.label,
-    required this.active,
+  const _MenuTile({
+    super.key,
+    required this.entry,
+    required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bg = active ? QPalette.primary.withOpacity(.12) : Colors.transparent;
-    final fg = active ? QPalette.primary : QPalette.slate;
+    final bg = selected ? QTheme.brandTint(context) : Colors.transparent;
+    final fg = selected ? QPalette.primary : QPalette.slate;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      child: Material(
-        color: bg,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            height: 44, padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Icon(icon, size: 20, color: fg),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: QTheme.small.copyWith(
-                      color: fg, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (active)
-                  Container(
-                    height: 8, width: 8,
-                    decoration: const BoxDecoration(color: QPalette.primary, shape: BoxShape.circle),
-                  ),
-              ],
-            ),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(entry.icon, color: fg),
+              const SizedBox(width: 10),
+              Expanded(child: Text(entry.label, style: QTheme.body.copyWith(color: fg))),
+              if (selected)
+                const Icon(Icons.arrow_right, color: QPalette.primary),
+            ],
           ),
         ),
       ),
     );
   }
-}
-
-class _NavItem {
-  final IconData icon;
-  final String label;
-  final int? index;
-  _NavItem({required this.icon, required this.label, this.index});
-}
-
-class _Extra {
-  final IconData icon;
-  final String label;
-  final String routeName;
-  _Extra({required this.icon, required this.label, required this.routeName});
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../Content/escrow_content.dart';
 
 class ForBanksScreen extends StatelessWidget {
   const ForBanksScreen({super.key});
@@ -8,69 +9,82 @@ class ForBanksScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return QSurface(
       title: 'For Banks & Ops',
-      subtitle: 'Pilot up to 500 users; we handle bill servicing, reminders, and AI analysis.',
+      subtitle: 'Escrow-first collections + dynamic fee floor, with clear ledgers, events, and admin guardrails.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const SectionHeader('Operating Model'),
           Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            alignment: WrapAlignment.center,
-            children: const [
-              _Tile(
-                icon: Icons.verified_user_outlined,
-                title: 'KYC/AML ready',
-                text: 'Use your existing onboarding or ours; Plaid + Stripe flows.',
-              ),
-              _Tile(
-                icon: Icons.receipt_long_outlined,
-                title: 'Bill-level servicing',
-                text: 'We read statements, schedule payments, and reconcile status.',
-              ),
-              _Tile(
-                icon: Icons.analytics_outlined,
-                title: 'AI insights',
-                text: 'Explain fees, spot waste, and recommend savings per user.',
-              ),
-              _Tile(
-                icon: Icons.shield_outlined,
-                title: 'Compliance minded',
-                text: 'SOC2 pathways, data minimization, and clear user controls.',
-              ),
-            ],
+            spacing: 16, runSpacing: 16,
+            children: EscrowContent.opsOverview.map((m) =>
+              SizedBox(
+                width: 360,
+                child: QCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(m['title']!, style: QTheme.h6),
+                      const SizedBox(height: 6),
+                      Text(m['text']!, style: QTheme.body),
+                    ],
+                  ),
+                ),
+              )
+            ).toList(),
+          ),
+
+          const SizedBox(height: 24),
+          const SectionHeader('Data Model & Ledgers'),
+          QCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Core Ledgers', style: QTheme.h6),
+                const SizedBox(height: 6),
+                ...EscrowContent.ledgers.map((l) => _bullet(l)),
+                const SizedBox(height: 16),
+                Text('Events & Jobs (examples)', style: QTheme.h6),
+                const SizedBox(height: 6),
+                _bullet('CRON: reserve_upcoming_bills (re-run on deposit)'),
+                _bullet('CRON: compute_quarter_fees'),
+                _bullet('API: POST /escrow/deposit (rewards on deposit)'),
+                _bullet('API: POST /escrow/apply-to-eoq (feature-flagged)'),
+                _bullet('API: GET /quarter/summary (secured/credit/fee preview)'),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          const SectionHeader('Admin Controls'),
+          QCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: EscrowContent.adminFlags.map((f) => _bullet(f)).toList(),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          const SectionHeader('Edge Cases'),
+          QCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: EscrowContent.edgeCases.map((e) => _bullet(e)).toList(),
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _Tile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String text;
-  const _Tile({required this.icon, required this.title, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return QCard(
-      child: SizedBox(
-        width: 380,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(radius: 22, backgroundColor: QTheme.brandTint(context), child: Icon(icon, color: QPalette.primary)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: QTheme.h6),
-                const SizedBox(height: 4),
-                Text(text, style: QTheme.bodyMuted),
-              ]),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _bullet(String text) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.circle, size: 8, color: QPalette.slateMuted),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: QTheme.body)),
+      ],
+    ),
+  );
 }
