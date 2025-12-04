@@ -1,34 +1,36 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../widgets/eoq_payment_card.dart';
+import '../state/quarter_state.dart';
 
 class OverviewScreen extends StatelessWidget {
   const OverviewScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final qs = QuarterState.instance;
+
     return QSurface(
       title: 'Overview',
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // End-of-Quarter summary (values are placeholders you can later bind to real state)
-            const EoqPaymentCard(
-              totalScheduled: 3600,   // total quarter spend scheduled
-              creditUsed: 1200,       // used so far this quarter
-              basePct: 0.07,          // 7% base fee
-              floorPct: 0.06,         // 6% minimum floor after rewards
-              rewardsApplied: 114,    // escrow/round-ups applied toward fee
-              note:
-                  'Round-ups and early escrow deposits reduce your fee (up to 1% off the base). '
-                  'We disburse to billers monthly; you make one payment at quarter end.',
+            // EOQ summary (kept — top 3 tiles removed per your request)
+            EoqPaymentCard(
+              totalScheduled: qs.lineQtr,
+              creditUsed: qs.creditUsedQtr,
+              basePct: qs.usageRate,
+              floorPct: qs.floorRate,
+              rewardsApplied: 0, // if you later pass escrow-to-fee, subtract here
+              note: 'We split your quarterly payment into monthly biller disbursements. '
+                    'At quarter end, your fee is the higher of ${_pct(qs.usageRate)} usage '
+                    'or ${_pct(qs.floorRate)} access & guarantee.',
             ),
 
             const SizedBox(height: 16),
 
-            // How this works (kept exactly like before)
+            // How this works (unchanged text block)
             QCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,9 +38,9 @@ class OverviewScreen extends StatelessWidget {
                   Text('How this works', style: QTheme.h6),
                   const SizedBox(height: 8),
                   Text(
-                    'You make one payment per quarter. QuarterPay splits and disburses '
-                    'to your billers monthly. If you enable round-ups/escrow, your fee can '
-                    'be offset by automated savings (down to a minimum floor).',
+                    'You make one payment per quarter. QuarterPay disburses to your billers monthly '
+                    'from your approved line. Funding escrow and round-ups reduce credit usage and can '
+                    'lower the usage fee exposure. A minimum ${_pct(qs.floorRate)} access & guarantee fee applies.',
                     style: QTheme.body,
                   ),
                 ],
@@ -49,4 +51,6 @@ class OverviewScreen extends StatelessWidget {
       ),
     );
   }
+
+  String _pct(double p) => '${(p * 100).toStringAsFixed(0)}%';
 }

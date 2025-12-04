@@ -2,11 +2,28 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 class EoqPaymentCard extends StatelessWidget {
-  final double totalScheduled;   // total quarter spend (scheduled)
-  final double creditUsed;       // what’s been used so far
-  final double basePct;          // e.g. 0.07
-  final double floorPct;         // e.g. 0.05
-  final double rewardsApplied;   // e.g. escrow / roundups applied as $ off fee
+  /// Total scheduled this quarter (legacy prop; used for copy/progress visuals).
+  final double totalScheduled;
+
+  /// Credit used so far this quarter (gross).
+  final double creditUsed;
+
+  /// Usage rate, e.g. 0.07 for 7%.
+  final double basePct;
+
+  /// Floor rate, e.g. 0.02 for 2%.
+  final double floorPct;
+
+  /// Escrow/round-ups PREVIEW applied against usage basis (reduces usage fee only).
+  final double rewardsApplied;
+
+  /// (Optional) Approved quarterly coverage limit (line). If null, falls back to totalScheduled.
+  final double? lineQtr;
+
+  /// (Optional) Same-quarter refunds that reduce usage basis.
+  final double? refundsSameQtr;
+
+  /// Optional note bubble.
   final String? note;
 
   const EoqPaymentCard({
@@ -16,19 +33,27 @@ class EoqPaymentCard extends StatelessWidget {
     required this.basePct,
     required this.floorPct,
     required this.rewardsApplied,
+    this.lineQtr,
+    this.refundsSameQtr,
     this.note,
   });
 
   @override
   Widget build(BuildContext context) {
-    // --- fee math ---
-    final double baseFee   = (totalScheduled * basePct);
-    final double floorFee  = (totalScheduled * floorPct);
-    // reduce base fee by rewards, but never below the floor
-    final double feeAfter  = (baseFee - rewardsApplied).clamp(floorFee, double.infinity);
+    // Line used for floor fee (defaults to totalScheduled if lineQtr missing)
+    final double lineForFloor = (lineQtr ?? totalScheduled).clamp(0, double.infinity);
 
-    // progress (creditUsed vs totalScheduled)
-    final double progress  = totalScheduled > 0 ? (creditUsed / totalScheduled).clamp(0, 1) : 0;
+    // Usage basis = credit used minus refunds minus escrow preview
+    final double adjustedUsed =
+        (creditUsed - (refundsSameQtr ?? 0) - rewardsApplied).clamp(0, double.infinity);
+
+    final double usageFee = adjustedUsed * basePct;
+    final double floorFee = lineForFloor * floorPct;
+    final double eoqFee = usageFee > floorFee ? usageFee : floorFee;
+
+    // Visual progress bar (credit used vs line)
+    final double denom = lineForFloor > 0 ? lineForFloor : (totalScheduled > 0 ? totalScheduled : 1);
+    final double progress = (creditUsed / denom).clamp(0, 1);
 
     return QCard(
       child: Column(
@@ -37,29 +62,28 @@ class EoqPaymentCard extends StatelessWidget {
           Text('End-of-Quarter Summary', style: QTheme.h6),
           const SizedBox(height: 8),
           Text(
-            'We pay your billers monthly from your QuarterPay line. At the end of the quarter, '
-            'you make a single repayment. Escrow/Round-ups can reduce your fee, with a minimum floor.',
+            'We pay billers monthly from your QuarterPay line. At quarter’s end, your fee is the greater of '
+            '${_pct(basePct)} of credit actually used (after refunds & escrow preview), or ${_pct(floorPct)} of your approved line.',
             style: QTheme.body,
           ),
 
           const SizedBox(height: 12),
-
-          // Usage progress
           _usageBar(progress: progress),
 
           const SizedBox(height: 12),
+          _row('Approved quarterly line', _money(lineForFloor)),
+          _row('Credit used to date', _money(creditUsed)),
+          if ((refundsSameQtr ?? 0) > 0)
+            _row('Same-quarter refunds', '-${_money(refundsSameQtr ?? 0)}', valueColor: QPalette.slateMuted),
+          if (rewardsApplied > 0)
+            _row('Escrow applied (preview)', '-${_money(rewardsApplied)}', valueColor: QPalette.slateMuted),
 
-          // Numbers
-          _row('Total scheduled', _money(totalScheduled)),
-          _row('Credit used so far', _money(creditUsed)),
-          const Divider(height: 20),
+          const Divider(height: 22),
 
-          _row('Base fee (${_pct(basePct)})', _money(baseFee)),
-          _row('Rewards applied', '-${_money(rewardsApplied)}', valueColor: QPalette.success),
-          _row('Minimum fee floor (${_pct(floorPct)})', _money(floorFee), valueColor: QPalette.slateMuted),
-          const SizedBox(height: 6),
-
-          _row('Estimated EOQ fee', _money(feeAfter), isStrong: true),
+          _row('Usage fee (${_pct(basePct)})', _money(usageFee)),
+          _row('Access & Guarantee floor (${_pct(floorPct)})', _money(floorFee)),
+          const SizedBox(height: 8),
+          _row('Your quarterly program fee (greater of)', _money(eoqFee), isStrong: true),
 
           if (note != null) ...[
             const SizedBox(height: 10),
@@ -70,14 +94,14 @@ class EoqPaymentCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(note!, style: QTheme.body),
-            )
+            ),
           ],
         ],
       ),
     );
   }
 
-  // helpers
+  // ==== helpers ====
 
   static String _money(double v) => '\$${v.toStringAsFixed(2)}';
   static String _pct(double p) => '${(p * 100).toStringAsFixed(0)}%';
@@ -88,10 +112,11 @@ class EoqPaymentCard extends StatelessWidget {
     bool isStrong = false,
     Color? valueColor,
   }) {
-    final TextStyle left  = isStrong ? QTheme.body.copyWith(fontWeight: FontWeight.w700) : QTheme.body;
-    final TextStyle right = (isStrong ? QTheme.body.copyWith(fontWeight: FontWeight.w700) : QTheme.body)
-        .copyWith(color: valueColor);
-
+    final TextStyle left =
+        isStrong ? QTheme.body.copyWith(fontWeight: FontWeight.w700) : QTheme.body;
+    final TextStyle right =
+        (isStrong ? QTheme.body.copyWith(fontWeight: FontWeight.w700) : QTheme.body)
+            .copyWith(color: valueColor);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(

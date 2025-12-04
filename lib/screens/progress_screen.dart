@@ -1,119 +1,201 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../widgets/fee_simulator_panel.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Demo data (replace with live values when wired up)
+    const double quarterlyTarget = 3741; // total scheduled this quarter
+    const double escrowLocked     = 114;  // current escrow
+    const double creditUsed       = 1260; // used so far (illustrative)
+
+    final double progress = (creditUsed / quarterlyTarget).clamp(0, 1);
+
     return QSurface(
-      title: 'Your Escrow',
-      subtitle: 'One quarterly payment; we handle the monthly billers. Track usage, fee estimate, and escrow boosts here.',
+      title: 'Progress',
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ====== MAIN PROGRESS ======
+            // ===== Quarter usage =====
             QCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Quarter progress', style: QTheme.h6),
-                  const SizedBox(height: 8),
+                  Text('Quarter status', style: QTheme.h6),
+                  const SizedBox(height: 6),
                   Text(
-                    'Usage of your QuarterPay credit line so far. Milestones help you plan your quarter and stay ahead.',
+                    'We pay your billers monthly from your QuarterPay line. '
+                    'You make one repayment at the end of the quarter.',
                     style: QTheme.body,
                   ),
                   const SizedBox(height: 12),
-                  _ProgressBar(percent: .62),
-                  const SizedBox(height: 12),
+                  _UsageBar(progress: progress),
+                  const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      _Milestone(label: '33%', amount: 1200),
-                      _Milestone(label: '66%', amount: 2400),
-                      _Milestone(label: '100%', amount: 3600),
+                    children: [
+                      _pill(context, label: '33%'),
+                      const SizedBox(width: 8),
+                      _pill(context, label: '66%'),
+                      const SizedBox(width: 8),
+                      _pill(context, label: '100%'),
+                      const Spacer(),
+                      Text('\$${creditUsed.toStringAsFixed(0)} / \$${quarterlyTarget.toStringAsFixed(0)}',
+                          style: QTheme.small),
                     ],
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // ====== MINI TIPS / FILL NEGATIVE SPACE ======
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: const [
-                _MiniTip(
-                  icon: Icons.shield_moon_outlined,
-                  title: 'On-time bill protection',
-                  text: 'We pay eligible billers monthly to protect your credit score.',
-                ),
-                _MiniTip(
-                  icon: Icons.auto_graph_outlined,
-                  title: 'Plan your quarter',
-                  text: 'Use milestones to forecast spend and the quarter-end repayment.',
-                ),
-                _MiniTip(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: 'Lower your fee',
-                  text: 'Round-ups & early escrow deposits can reduce your fee down to the floor.',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // ====== BILLER PAYMENT STATUS ======
-            QCard(
+            // ===== Escrow area (distinct tint) =====
+            Container(
+              decoration: BoxDecoration(
+                color: QTheme.brandTint(context),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: QShadows.soft,
+              ),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Biller payment status', style: QTheme.h6),
-                  const SizedBox(height: 8),
+                  Text('Escrow & Boosts', style: QTheme.h6),
+                  const SizedBox(height: 6),
                   Text(
-                    'QuarterPay disburses payments to your billers monthly. Here’s what’s been paid so far this quarter.',
+                    'Round-ups and early deposits build a buffer that can reduce your usage fee. '
+                    'Escrow never replaces the 2% Program Access & Guarantee fee.',
                     style: QTheme.body,
                   ),
                   const SizedBox(height: 12),
-                  ...[
-                    _BillerRow(name: 'Electric', month: 'Nov', status: 'Paid',  icon: Icons.bolt_outlined),
-                    _BillerRow(name: 'Internet', month: 'Nov', status: 'Paid',  icon: Icons.wifi_outlined),
-                    _BillerRow(name: 'Water',    month: 'Nov', status: 'Queued', icon: Icons.water_drop_outlined),
-                  ],
+
+                  // two compact cards inside the tinted container
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _InfoBadge(
+                        icon: Icons.savings_outlined,
+                        title: 'Escrow locked',
+                        big: '\$${escrowLocked.toStringAsFixed(0)}',
+                        sub: 'Applied to your quarter at EOQ',
+                      ),
+                      _InfoBadge(
+                        icon: Icons.bolt_outlined,
+                        title: 'Instant Boost',
+                        big: 'On-demand',
+                        sub: 'Add funds now to increase buffer',
+                        trailing: ElevatedButton(
+                          onPressed: () {},
+                          child: const Text('Add funds'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-            // ====== ESCROW & BOOSTS (moved here from the Escrow Boost page) ======
-            _EscrowSection(),
+            // ===== Tips / guidance =====
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: const [
+                _MiniTip(
+                  icon: Icons.autorenew_outlined,
+                  title: 'Automate round-ups',
+                  text: 'Micro-deposits add up and help offset usage fees.',
+                ),
+                _MiniTip(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Deposit early',
+                  text: 'Early escrow deposits increase your buffer sooner.',
+                ),
+                _MiniTip(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Keep bills linked',
+                  text: 'Linked billers are paid on time to protect your credit.',
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ===== Fee simulator (preview) =====
+            const FeeSimulatorPanel(),
+
+            const SizedBox(height: 16),
+
+            // ===== Biller payment confidence =====
+            QCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Payment assurance', style: QTheme.h6),
+                  const SizedBox(height: 6),
+                  Text(
+                    'We disburse your linked bills monthly. You can view each bill’s status, '
+                    'confirmation, and date of payment in History at any time.',
+                    style: QTheme.body,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _statusDot(color: Colors.green),
+                      const SizedBox(width: 8),
+                      Text('All scheduled payments are current.', style: QTheme.small),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
+  Widget _pill(BuildContext context, {required String label}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: QTheme.brandTint(context),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(label, style: QTheme.small),
+    );
+  }
+
+  Widget _statusDot({required Color color}) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
 }
 
-// -------------------- widgets --------------------
-
-class _ProgressBar extends StatelessWidget {
-  final double percent;
-  const _ProgressBar({required this.percent});
+/// Compact usage bar that respects theme translucency.
+class _UsageBar extends StatelessWidget {
+  final double progress;
+  const _UsageBar({required this.progress});
 
   @override
   Widget build(BuildContext context) {
-    final p = percent.clamp(0.0, 1.0);
     return LayoutBuilder(
       builder: (context, c) {
-        final w = c.maxWidth * p;
+        final w = c.maxWidth * progress;
         return Stack(
           children: [
             Container(
-              height: 14,
+              height: 12,
               decoration: BoxDecoration(
                 color: QPalette.cardFill.withOpacity(.5),
                 borderRadius: BorderRadius.circular(999),
@@ -121,7 +203,7 @@ class _ProgressBar extends StatelessWidget {
             ),
             AnimatedContainer(
               duration: const Duration(milliseconds: 350),
-              height: 14,
+              height: 12,
               width: w,
               decoration: BoxDecoration(
                 color: QPalette.primary,
@@ -136,23 +218,7 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-class _Milestone extends StatelessWidget {
-  final String label;
-  final double amount;
-  const _Milestone({required this.label, required this.amount});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.flag_outlined, size: 18, color: QPalette.slateMuted),
-        const SizedBox(width: 6),
-        Text('$label at \$${amount.toStringAsFixed(0)}', style: QTheme.bodyMuted),
-      ],
-    );
-  }
-}
-
+/// Small tip card
 class _MiniTip extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -167,8 +233,11 @@ class _MiniTip extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: QPalette.slate, size: 28),
-            const SizedBox(width: 10),
+            CircleAvatar(
+              backgroundColor: QTheme.brandTint(context),
+              child: Icon(icon),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +247,7 @@ class _MiniTip extends StatelessWidget {
                   Text(text, style: QTheme.body),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -186,185 +255,52 @@ class _MiniTip extends StatelessWidget {
   }
 }
 
-class _BillerRow extends StatelessWidget {
-  final String name;
-  final String month;
-  final String status;
-  final IconData icon;
-  const _BillerRow({required this.name, required this.month, required this.status, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    final ok = status.toLowerCase() == 'paid';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: QTheme.brandTint(context),
-            child: Icon(icon, color: QPalette.primary),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text('$name — $month', style: QTheme.body),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: (ok ? QPalette.success : QPalette.info).withOpacity(.12),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              status,
-              style: QTheme.small.copyWith(color: ok ? QPalette.success : QPalette.info, fontWeight: FontWeight.w700),
-            ),
-          )
-        ],
-      ),
-    );
-  }
-}
-
-/// Distinct but on-brand section that consolidates the old Escrow Boost content.
-class _EscrowSection extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final tint = QTheme.brandTint(context);
-    return QCard(
-      overlayColor: tint, // subtle tint to distinguish the area
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Escrow & Boosts', style: QTheme.h6),
-          const SizedBox(height: 6),
-          Text(
-            'Grow your escrow automatically with round-ups, or add an Instant Boost when you need to bring your end-of-quarter '
-            'payment down. Small deposits over time can reduce your fee down to the floor.',
-            style: QTheme.body,
-          ),
-          const SizedBox(height: 12),
-
-          // Row of concise action/info cards
-          LayoutBuilder(
-            builder: (context, c) {
-              final isNarrow = c.maxWidth < 900;
-              final children = const [
-                _EscrowCard(
-                  icon: Icons.savings_outlined,
-                  title: 'Round-Ups',
-                  bullets: [
-                    'Auto-save spare change from purchases',
-                    'Applies to escrow to reduce EOQ fee',
-                    'Toggle anytime',
-                  ],
-                ),
-                _EscrowCard(
-                  icon: Icons.bolt_outlined,
-                  title: 'Instant Boost',
-                  bullets: [
-                    'One-tap escrow top-up',
-                    'Use when you want a lower EOQ payment',
-                    'Great before quarter end',
-                  ],
-                  primaryCta: 'Add Instant Boost',
-                ),
-                _EscrowCard(
-                  icon: Icons.lock_outline,
-                  title: 'Auto-Lock',
-                  bullets: [
-                    'Escrow funds are reserved for quarter end',
-                    'Unlock only with repayment schedule updates',
-                    'Visibility inside Overview & History',
-                  ],
-                ),
-                _EscrowCard(
-                  icon: Icons.percent_outlined,
-                  title: 'Fee Floor',
-                  bullets: [
-                    'Base fee (e.g., 7%) can be reduced via escrow',
-                    'Never below program floor (e.g., 6%)',
-                    'Shown on EOQ summary',
-                  ],
-                ),
-              ];
-              return isNarrow
-                  ? Column(
-                      children: children
-                          .map((w) => Padding(padding: const EdgeInsets.only(bottom: 12), child: w))
-                          .toList(),
-                    )
-                  : Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: children
-                          .map((w) => SizedBox(width: (c.maxWidth - 36) / 2, child: w))
-                          .toList(),
-                    );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EscrowCard extends StatelessWidget {
+/// Compact info badge used inside the tinted escrow area
+class _InfoBadge extends StatelessWidget {
   final IconData icon;
   final String title;
-  final List<String> bullets;
-  final String? primaryCta;
-  const _EscrowCard({
+  final String big;
+  final String sub;
+  final Widget? trailing;
+  const _InfoBadge({
     required this.icon,
     required this.title,
-    required this.bullets,
-    this.primaryCta,
+    required this.big,
+    required this.sub,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    final accent = QPalette.primary.withOpacity(.12);
-    return QCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            CircleAvatar(backgroundColor: accent, child: Icon(icon, color: QPalette.primary)),
-            const SizedBox(width: 10),
-            Text(title, style: QTheme.h6),
-          ]),
-          const SizedBox(height: 10),
-          ...bullets.map((b) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 3),
-                      child: Icon(Icons.check_circle_outline, size: 16, color: QPalette.slate),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(b, style: QTheme.body)),
-                  ],
-                ),
-              )),
-          if (primaryCta != null) ...[
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton.icon(
-                onPressed: () {/* TODO: hook to your flow */},
-                icon: const Icon(Icons.bolt_outlined, size: 18),
-                label: Text(primaryCta!),
-                style: ElevatedButton.styleFrom(
-                  elevation: 0,
-                  foregroundColor: Colors.white,
-                  backgroundColor: QPalette.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 260, maxWidth: 420),
+      child: QCard(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(icon, color: QPalette.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: QTheme.h6),
+                  const SizedBox(height: 2),
+                  Text(big, style: QTheme.h4),
+                  const SizedBox(height: 6),
+                  Text(sub, style: QTheme.bodyMuted),
+                ],
               ),
             ),
+            if (trailing != null) ...[
+              const SizedBox(width: 12),
+              trailing!,
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
